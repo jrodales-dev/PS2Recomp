@@ -131,10 +131,19 @@ jobs:
         run: |
           if (!(Test-Path "inputs\game.elf")) { throw "Missing game ELF after download" }
           if (!(Test-Path "inputs\map.csv")) { throw "Missing map CSV after download" }
+      - name: Generate recomp config
+        shell: pwsh
+        run: |
+          @"
+          [general]
+          input = "inputs/game.elf"
+          ghidra_output = "inputs/map.csv"
+          output = "recomp_out"
+          "@ | Set-Content -Path "inputs\recomp.toml"
       - name: Run recomp
         shell: cmd
         run: |
-          .\build\ps2xRecomp\Release\ps2_recomp.exe "inputs\game.elf" "inputs\map.csv" --out .\recomp_out
+          .\build\ps2xRecomp\Release\ps2_recomp.exe "inputs\recomp.toml"
       - name: Upload recomp output
         uses: actions/upload-artifact@v6
         with:

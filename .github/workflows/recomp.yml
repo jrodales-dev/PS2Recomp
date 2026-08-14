@@ -86,7 +86,7 @@ jobs:
       - name: Run ps2_analyzer
         shell: cmd
         run: |
-          .\build\ps2xAnalyzer\Release\ps2_analyzer.exe "inputs\game.elf" game.toml
+          .\build\ps2xAnalyzer\Release\ps2_analyzer.exe "inputs\game.elf" "inputs\game.toml"
 
       - name: Generate recomp config
         shell: pwsh
@@ -97,7 +97,7 @@ jobs:
             'ghidra_output = "inputs/map.csv"'
             'output = "recomp_out"'
           ) -join "`n"
-          Set-Content -Encoding utf8NoBOM -Path "inputs\recomp.toml" -Value $toml
+          Set-Content -Encoding utf8NoBOM -Path "inputs\game.toml" -Value $toml
 
       - name: Run recomp
         shell: cmd

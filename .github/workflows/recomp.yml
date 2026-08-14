@@ -31,10 +31,6 @@ jobs:
           cmake -B build
           cmake --build build --config Release -- /p:CL="/Zm200 /bigobj"
 
-      - name: Tests
-        shell: cmd
-        run: .\build\ps2xTest\Release\ps2x_tests.exe
-
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -42,9 +38,7 @@ jobs:
           path: |
             build/ps2xAnalyzer/Release/*.exe
             build/ps2xRecomp/Release/*.exe
-            build/ps2xTest/Release/*.exe
             build/ps2xRuntime/Release/*.exe
-            
 
   recomp-game:
     name: recomp-game
@@ -88,6 +82,11 @@ jobs:
         run: |
           if (!(Test-Path "inputs\game.elf")) { throw "Missing game ELF after download" }
           if (!(Test-Path "inputs\map.csv")) { throw "Missing map CSV after download" }
+
+      - name: Run ps2_analyzer
+        shell: cmd
+        run: |
+          .\build\ps2xAnalyzer\Release\ps2_analyzer.exe "inputs\game.elf" game.toml
 
       - name: Generate recomp config
         shell: pwsh

@@ -117,16 +117,16 @@ jobs:
       - name: Copy generated source/header files into runtime
         shell: pwsh
         run: |
-          if (!(Test-Path "output")) { throw "Missing output folder from recomp step" }
+          if (!(Test-Path "recomp_out")) { throw "Missing recomp_out folder from recomp step" }
 
           New-Item -ItemType Directory -Force -Path "ps2xRuntime/src/runner" | Out-Null
           New-Item -ItemType Directory -Force -Path "ps2xRuntime/include" | Out-Null
 
-          Get-ChildItem -Path "output" -Filter "*.cpp" -File | ForEach-Object {
+          Get-ChildItem -Path "recomp_out" -Filter "*.cpp" -File | ForEach-Object {
             Copy-Item $_.FullName -Destination "ps2xRuntime/src/runner/" -Force
           }
 
-          Get-ChildItem -Path "output" -Filter "*.h" -File | ForEach-Object {
+          Get-ChildItem -Path "recomp_out" -Filter "*.h" -File | ForEach-Object {
             Copy-Item $_.FullName -Destination "ps2xRuntime/include/" -Force
           }
 

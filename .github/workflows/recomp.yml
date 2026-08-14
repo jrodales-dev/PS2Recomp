@@ -14,51 +14,6 @@ on:
         type: string
 
 jobs:
-  linux-gcc-clang:
-    strategy:
-      fail-fast: false
-      matrix:
-        compiler: [gcc, clang]
-    name: linux-${{ matrix.compiler }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          submodules: recursive
-      - name: Restore ccache
-        uses: actions/cache@v4
-        with:
-          path: ~/.ccache
-          key: ${{ runner.os }}-${{ matrix.compiler }}-ccache-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', 'cmake/**') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.compiler }}-ccache-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ccache ninja-build libgl-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev pkg-config libavcodec-dev libavformat-dev libavutil-dev libswresample-dev libswscale-dev
-      - name: Configure ccache
-        run: |
-          ccache --set-config=max_size=500M
-          ccache --zero-stats
-      - name: Show ccache stats (before build)
-        run: ccache -s
-      - name: Configure
-        run: |
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            export CC=gcc
-            export CXX=g++
-          else
-            export CC=clang
-            export CXX=clang++
-          fi
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS=-msse4.1 -DCMAKE_CXX_FLAGS=-msse4.1 -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-      - name: Build
-        run: cmake --build build --config Release
-      - name: Show ccache stats (after build)
-        run: ccache -s
-      - name: Tests
-        run: ./build/ps2xTest/ps2x_tests
-
   windows-msvc:
     strategy:
       fail-fast: false

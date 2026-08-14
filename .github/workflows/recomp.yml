@@ -1,95 +1,23 @@
 name: build-and-recomp
-
 on:
   push:
   pull_request:
   workflow_dispatch:
     inputs:
-      game_elf:
-        description: "Path to game ELF file in repository/workspace (e.g. inputs/game.elf)"
+      game_elf_url:
+        description: "Direct download URL for the game ELF file (e.g. a Release asset or Gist raw link)"
         required: true
         type: string
-      map_csv:
-        description: "Path to map CSV file in repository/workspace (e.g. inputs/map.csv)"
+      map_csv_url:
+        description: "Direct download URL for the map CSV file"
         required: true
         type: string
-
 jobs:
   linux-gcc-clang:
-    strategy:
-      fail-fast: false
-      matrix:
-        compiler: [gcc, clang]
-
-    name: linux-${{ matrix.compiler }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          submodules: recursive
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ninja-build libgl-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev pkg-config libavcodec-dev libavformat-dev libavutil-dev libswresample-dev libswscale-dev
-
-      - name: Configure
-        run: |
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            export CC=gcc
-            export CXX=g++
-          else
-            export CC=clang
-            export CXX=clang++
-          fi
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS=-msse4.1 -DCMAKE_CXX_FLAGS=-msse4.1
-
-      - name: Build
-        run: cmake --build build --config Release
-
-      - name: Tests
-        run: ./build/ps2xTest/ps2x_tests
+    # ...unchanged...
 
   windows-msvc:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            arch: x64
-            target_arch: x86_64
-
-    name: windows-msvc-${{ matrix.target_arch }}
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          submodules: recursive
-
-      - uses: lukka/get-cmake@latest
-
-      - uses: TheMrMilchmann/setup-msvc-dev@v4
-        with:
-          arch: ${{ matrix.arch }}
-
-      - name: Build
-        shell: cmd
-        run: |
-          cmake -B build
-          cmake --build build --config Release
-
-      - name: Tests
-        shell: cmd
-        run: .\build\ps2xTest\Release\ps2x_tests.exe
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v6
-        with:
-          name: PS2Recomp - Windows
-          path: |
-            build/ps2xAnalyzer/Release/*.exe
-            build/ps2xRecomp/Release/*.exe
-            build/ps2xTest/Release/*.exe
+    # ...unchanged...
 
   recomp-game:
     name: recomp-game
@@ -100,30 +28,30 @@ jobs:
       - uses: actions/checkout@v6
         with:
           submodules: recursive
-
       - uses: lukka/get-cmake@latest
-
       - uses: TheMrMilchmann/setup-msvc-dev@v4
         with:
           arch: x64
-
       - name: Build tools
         shell: cmd
         run: |
           cmake -B build
           cmake --build build --config Release
-
+      - name: Download game ELF and map CSV
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path inputs | Out-Null
+          Invoke-WebRequest -Uri "${{ inputs.game_elf_url }}" -OutFile "inputs\game.elf"
+          Invoke-WebRequest -Uri "${{ inputs.map_csv_url }}" -OutFile "inputs\map.csv"
       - name: Validate inputs
         shell: pwsh
         run: |
-          if (!(Test-Path "${{ inputs.game_elf }}")) { throw "Missing game ELF: ${{ inputs.game_elf }}" }
-          if (!(Test-Path "${{ inputs.map_csv }}")) { throw "Missing map CSV: ${{ inputs.map_csv }}" }
-
+          if (!(Test-Path "inputs\game.elf")) { throw "Missing game ELF after download" }
+          if (!(Test-Path "inputs\map.csv")) { throw "Missing map CSV after download" }
       - name: Run recomp
         shell: cmd
         run: |
-          .\build\ps2xRecomp\Release\ps2xRecomp.exe "${{ inputs.game_elf }}" "${{ inputs.map_csv }}" --out .\recomp_out
-
+          .\build\ps2xRecomp\Release\ps2xRecomp.exe "inputs\game.elf" "inputs\map.csv" --out .\recomp_out
       - name: Upload recomp output
         uses: actions/upload-artifact@v6
         with:

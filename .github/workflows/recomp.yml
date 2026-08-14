@@ -119,7 +119,7 @@ jobs:
       - name: Run recomp
         shell: cmd
         run: |
-          .\build\ps2xRecomp\Release\ps2xRecomp.exe "inputs\game.elf" "inputs\map.csv" --out .\recomp_out
+          .\build\ps2xRecomp\Release\ps2_recomp.exe "inputs\game.elf" "inputs\map.csv" --out .\recomp_out
       - name: Upload recomp output
         uses: actions/upload-artifact@v6
         with:

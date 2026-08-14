@@ -1,8 +1,6 @@
 name: build-and-recomp
 
 on:
-  push:
-  pull_request:
   workflow_dispatch:
     inputs:
       game_elf_asset_id:

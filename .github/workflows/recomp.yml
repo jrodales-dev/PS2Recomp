@@ -133,7 +133,7 @@ jobs:
       - name: Configure ps2EntryRunner build
         shell: cmd
         run: |
-          cmake -S . -B out/build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          cmake -S . -B out/build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_UNITY_BUILD=OFF
 
       - name: Build ps2EntryRunner (RelWithDebInfo)
         shell: cmd

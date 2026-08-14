@@ -1,4 +1,5 @@
 name: build-and-recomp
+
 on:
   push:
   pull_request:
@@ -25,23 +26,28 @@ jobs:
     name: windows-msvc-${{ matrix.target_arch }}
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
+
       - uses: lukka/get-cmake@latest
+
       - uses: TheMrMilchmann/setup-msvc-dev@v4
         with:
           arch: ${{ matrix.arch }}
+
       - name: Build
         shell: cmd
         run: |
           cmake -B build
           cmake --build build --config Release
+
       - name: Tests
         shell: cmd
         run: .\build\ps2xTest\Release\ps2x_tests.exe
+
       - name: Upload build artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: PS2Recomp - Windows
           path: |
@@ -55,18 +61,22 @@ jobs:
     runs-on: windows-latest
     needs: windows-msvc
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
+
       - uses: lukka/get-cmake@latest
+
       - uses: TheMrMilchmann/setup-msvc-dev@v4
         with:
           arch: x64
+
       - name: Build tools
         shell: cmd
         run: |
           cmake -B build
           cmake --build build --config Release
+
       - name: Download game ELF and map CSV from Release assets
         shell: pwsh
         env:
@@ -81,13 +91,16 @@ jobs:
           $csvUrl = "https://api.github.com/repos/${{ github.repository }}/releases/assets/${{ inputs.map_csv_asset_id }}"
           Invoke-WebRequest -Uri $elfUrl -Headers $headers -OutFile "inputs\game.elf"
           Invoke-WebRequest -Uri $csvUrl -Headers $headers -OutFile "inputs\map.csv"
+
       - name: Validate inputs
         shell: pwsh
         run: |
           if (!(Test-Path "inputs\game.elf")) { throw "Missing game ELF after download" }
           if (!(Test-Path "inputs\map.csv")) { throw "Missing map CSV after download" }
+
       - name: Generate recomp config
         shell: pwsh
+        run: |
           $toml = @(
             '[general]'
             'input = "inputs/game.elf"'
@@ -95,12 +108,14 @@ jobs:
             'output = "recomp_out"'
           ) -join "`n"
           Set-Content -Encoding utf8NoBOM -Path "inputs\recomp.toml" -Value $toml
+
       - name: Run recomp
         shell: cmd
         run: |
           .\build\ps2xRecomp\Release\ps2_recomp.exe "inputs\recomp.toml"
+
       - name: Upload recomp output
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: Recompiled-Game
           path: recomp_out/**

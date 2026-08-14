@@ -2,15 +2,6 @@ name: build-and-recomp
 
 on:
   workflow_dispatch:
-    inputs:
-      game_elf_asset_id:
-        description: "Release asset ID for game.elf (numeric, e.g. 123456789)"
-        required: true
-        type: string
-      map_csv_asset_id:
-        description: "Release asset ID for map.csv (numeric, e.g. 987654321)"
-        required: true
-        type: string
 
 jobs:
   windows-msvc:
@@ -87,8 +78,8 @@ jobs:
             Authorization = "token $env:GH_TOKEN"
             Accept        = "application/octet-stream"
           }
-          $elfUrl = "https://api.github.com/repos/${{ github.repository }}/releases/assets/${{ inputs.game_elf_asset_id }}"
-          $csvUrl = "https://api.github.com/repos/${{ github.repository }}/releases/assets/${{ inputs.map_csv_asset_id }}"
+          $elfUrl = "https://api.github.com/repos/${{ github.repository }}/releases/assets/514541207"
+          $csvUrl = "https://api.github.com/repos/${{ github.repository }}/releases/assets/514541168"
           Invoke-WebRequest -Uri $elfUrl -Headers $headers -OutFile "inputs\game.elf"
           Invoke-WebRequest -Uri $csvUrl -Headers $headers -OutFile "inputs\map.csv"
 

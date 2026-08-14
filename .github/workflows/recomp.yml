@@ -54,6 +54,8 @@ jobs:
             build/ps2xAnalyzer/Release/*.exe
             build/ps2xRecomp/Release/*.exe
             build/ps2xTest/Release/*.exe
+            build/ps2xRuntime/Release/*.exe
+            
 
   recomp-game:
     name: recomp-game

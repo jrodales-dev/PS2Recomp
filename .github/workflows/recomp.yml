@@ -29,7 +29,7 @@ jobs:
         shell: cmd
         run: |
           cmake -B build
-          cmake --build build --config Release
+          cmake --build build --config Release -- /p:CL="/Zm200 /bigobj"
 
       - name: Tests
         shell: cmd
@@ -66,7 +66,7 @@ jobs:
         shell: cmd
         run: |
           cmake -B build
-          cmake --build build --config Release
+          cmake --build build --config Release -- /p:CL="/Zm200 /bigobj"
 
       - name: Download game ELF and map CSV from Release assets
         shell: pwsh
@@ -129,7 +129,7 @@ jobs:
       - name: Build ps2EntryRunner (RelWithDebInfo)
         shell: cmd
         run: |
-          cmake --build out/build --config RelWithDebInfo --target ps2EntryRunner -- /m
+          cmake --build out/build --config RelWithDebInfo --target ps2EntryRunner -- /m /p:CL="/Zm200 /bigobj"
 
       - name: Verify ps2EntryRunner exists
         shell: pwsh

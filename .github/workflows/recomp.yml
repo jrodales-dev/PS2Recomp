@@ -114,6 +114,45 @@ jobs:
         run: |
           .\build\ps2xRecomp\Release\ps2_recomp.exe "inputs\recomp.toml"
 
+      - name: Copy generated source/header files into runtime
+        shell: pwsh
+        run: |
+          if (!(Test-Path "output")) { throw "Missing output folder from recomp step" }
+
+          New-Item -ItemType Directory -Force -Path "ps2xRuntime/src/runner" | Out-Null
+          New-Item -ItemType Directory -Force -Path "ps2xRuntime/include" | Out-Null
+
+          Get-ChildItem -Path "output" -Filter "*.cpp" -File | ForEach-Object {
+            Copy-Item $_.FullName -Destination "ps2xRuntime/src/runner/" -Force
+          }
+
+          Get-ChildItem -Path "output" -Filter "*.h" -File | ForEach-Object {
+            Copy-Item $_.FullName -Destination "ps2xRuntime/include/" -Force
+          }
+
+      - name: Configure ps2EntryRunner build
+        shell: cmd
+        run: |
+          cmake -S . -B out/build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+
+      - name: Build ps2EntryRunner (RelWithDebInfo)
+        shell: cmd
+        run: |
+          cmake --build out/build --config RelWithDebInfo --target ps2EntryRunner -- /m
+
+      - name: Verify ps2EntryRunner exists
+        shell: pwsh
+        run: |
+          if (!(Test-Path "out/build/ps2xRuntime/RelWithDebInfo/ps2EntryRunner.exe")) {
+            throw "ps2EntryRunner.exe not found at out/build/ps2xRuntime/RelWithDebInfo/ps2EntryRunner.exe"
+          }
+
+      - name: Upload ps2EntryRunner artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ps2EntryRunner-windows
+          path: out/build/ps2xRuntime/RelWithDebInfo/ps2EntryRunner.exe
+
       - name: Upload recomp output
         uses: actions/upload-artifact@v4
         with:

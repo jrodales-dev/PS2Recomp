@@ -133,13 +133,13 @@ jobs:
           if (!(Test-Path "inputs\map.csv")) { throw "Missing map CSV after download" }
       - name: Generate recomp config
         shell: pwsh
-        run: |
-          @"
-          [general]
-          input = "inputs/game.elf"
-          ghidra_output = "inputs/map.csv"
-          output = "recomp_out"
-          "@ | Set-Content -Path "inputs\recomp.toml"
+          $toml = @(
+            '[general]'
+            'input = "inputs/game.elf"'
+            'ghidra_output = "inputs/map.csv"'
+            'output = "recomp_out"'
+          ) -join "`n"
+          Set-Content -Encoding utf8NoBOM -Path "inputs\recomp.toml" -Value $toml
       - name: Run recomp
         shell: cmd
         run: |

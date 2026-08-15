@@ -186,7 +186,7 @@ jobs:
       - name: Configure ps2EntryRunner build
         shell: cmd
         run: |
-          cmake -S . -B out/build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_UNITY_BUILD=OFF -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_C_FLAGS="/Zm200 /bigobj /FS" -DCMAKE_CXX_FLAGS="/Zm200 /bigobj /FS"
+          cmake -S . -B out/build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_UNITY_BUILD=OFF -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_C_FLAGS="/Zm200 /bigobj" -DCMAKE_CXX_FLAGS="/Zm200 /bigobj" -DCMAKE_C_FLAGS_RELWITHDEBINFO="/MD /Z7 /O2 /Ob1 /DNDEBUG" -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="/MD /Z7 /O2 /Ob1 /DNDEBUG"
           
       - name: Build ps2EntryRunner (RelWithDebInfo)
         shell: cmd

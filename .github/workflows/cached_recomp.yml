@@ -134,39 +134,38 @@ jobs:
       - name: Generate recomp config
         shell: pwsh
         run: |
-          # Install the TOML module from the PowerShell Gallery
-          Install-Module -Name toml -Force -Scope CurrentUser
-          
           $tomlPath = "inputs\game.toml"
           
           if (-not (Test-Path $tomlPath)) {
             throw "Arquivo $tomlPath não encontrado – certifique-se de que o ps2_analyzer foi executado com sucesso."
           }
           
-          $tomlContent = Get-Content -Path $tomlPath -Raw
-          $config = ConvertFrom-Toml $tomlContent
+          # Read lines and manually fix/inject the correct paths under [general]
+          $content = Get-Content -Path $tomlPath -Raw
           
-          if (-not $config.general) {
-            $config | Add-Member -NotePropertyName "general" -NotePropertyValue @{} -Force
+          # If [general] exists, replace the empty fields; otherwise append them
+          if ($content -match '\[general\]') {
+              $content = $content -replace 'input\s*=.*', 'input = "inputs/game.elf"'
+              $content = $content -replace 'ghidra_output\s*=.*', 'ghidra_output = "inputs/map.csv"'
+              $content = $content -replace 'output\s*=.*', 'output = "recomp_out"'
+          } else {
+              $content += "`n[general]`ninput = `"inputs/game.elf`"`nghidra_output = `"inputs/map.csv`"`noutput = `"recomp_out`"`n"
           }
           
-          $config.general.input = "inputs/game.elf"
-          $config.general.ghidra_output = "inputs/map.csv"
-          $config.general.output = "recomp_out"
-          
-          $newToml = ConvertTo-Toml $config
-          Set-Content -Path $tomlPath -Value $newToml -Encoding utf8NoBOM -NoNewline
+          Set-Content -Path $tomlPath -Value $content -Encoding utf8NoBOM
           
       - name: Debug TOML
         shell: pwsh
         run: |
           Get-Content inputs\game.toml
        
-      # Path updated: removed \Release\
       - name: Run recomp
-        shell: cmd
+        shell: pwsh
         run: |
-          .\build\ps2xRecomp\ps2_recomp.exe "inputs\game.toml"
+          & .\build\ps2xRecomp\ps2_recomp.exe "inputs\game.toml"
+          if ($LASTEXITCODE -ne 0) {
+            throw "ps2_recomp.exe failed with exit code $LASTEXITCODE"
+          }
 
       - name: Copy generated source/header files into runtime
         shell: pwsh

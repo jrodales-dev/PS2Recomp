@@ -29,11 +29,13 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
 
-      # 1. Install sccache
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.6
 
-      # 2. Setup GitHub Actions Cache for sccache
+      - name: Prepare sccache directory
+        shell: pwsh
+        run: New-Item -ItemType Directory -Force -Path "${{ env.SCCACHE_DIR }}" | Out-Null
+
       - name: Cache sccache
         uses: actions/cache@v4
         with:

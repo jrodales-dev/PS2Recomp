@@ -48,9 +48,9 @@ jobs:
       - name: Build
         shell: cmd
         run: |
-          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_C_FLAGS="/Zm200 /bigobj" -DCMAKE_CXX_FLAGS="/Zm200 /bigobj"
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_C_FLAGS="/Zm200 /bigobj /FS" -DCMAKE_CXX_FLAGS="/Zm200 /bigobj /FS"
           cmake --build build
-
+          
       # 4. Paths updated: Ninja does not output to a "Release" subfolder
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -186,8 +186,8 @@ jobs:
       - name: Configure ps2EntryRunner build
         shell: cmd
         run: |
-          cmake -S . -B out/build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_UNITY_BUILD=OFF -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_C_FLAGS="/Zm200 /bigobj" -DCMAKE_CXX_FLAGS="/Zm200 /bigobj"
-
+          cmake -S . -B out/build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_UNITY_BUILD=OFF -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_C_FLAGS="/Zm200 /bigobj /FS" -DCMAKE_CXX_FLAGS="/Zm200 /bigobj /FS"
+          
       - name: Build ps2EntryRunner (RelWithDebInfo)
         shell: cmd
         run: |

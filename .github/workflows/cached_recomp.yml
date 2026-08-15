@@ -1,0 +1,206 @@
+name: build-and-recomp-with-cache
+
+on:
+  workflow_dispatch:
+
+jobs:
+  windows-msvc:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            arch: x64
+            target_arch: x86_64
+    name: windows-msvc-${{ matrix.target_arch }}
+    runs-on: ${{ matrix.os }}
+    # Set the sccache directory environment variable for this job
+    env:
+      SCCACHE_DIR: ${{ github.workspace }}/.sccache
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: lukka/get-cmake@latest
+
+      - uses: TheMrMilchmann/setup-msvc-dev@v4
+        with:
+          arch: ${{ matrix.arch }}
+
+      # 1. Install sccache
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.6
+
+      # 2. Setup GitHub Actions Cache for sccache
+      - name: Cache sccache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: ${{ runner.os }}-sccache-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-sccache-
+
+      # 3. Build using Ninja and sccache compiler launchers
+      - name: Build
+        shell: cmd
+        run: |
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_C_FLAGS="/Zm200 /bigobj" -DCMAKE_CXX_FLAGS="/Zm200 /bigobj"
+          cmake --build build
+
+      # 4. Paths updated: Ninja does not output to a "Release" subfolder
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PS2Recomp - Windows
+          path: |
+            build/ps2xAnalyzer/*.exe
+            build/ps2xRecomp/*.exe
+            build/ps2xRuntime/*.exe
+
+  recomp-game:
+    name: recomp-game
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: windows-latest
+    needs: windows-msvc
+    env:
+      SCCACHE_DIR: ${{ github.workspace }}/.sccache
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: lukka/get-cmake@latest
+
+      - uses: TheMrMilchmann/setup-msvc-dev@v4
+        with:
+          arch: x64
+
+      # Setup sccache and cache for the final ps2EntryRunner build
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.6
+
+      - name: Cache sccache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: ${{ runner.os }}-sccache-runtime-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-sccache-runtime-
+            ${{ runner.os }}-sccache-
+
+      # Download the tools we compiled in Job 1
+      - name: Download tools artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: PS2Recomp - Windows
+
+      - name: Download game ELF and map CSV from Release assets
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          New-Item -ItemType Directory -Force -Path inputs | Out-Null
+          $headers = @{
+            Authorization = "token $env:GH_TOKEN"
+            Accept        = "application/octet-stream"
+          }
+          $elfUrl = "https://api.github.com/repos/${{ github.repository }}/releases/assets/514541207"
+          $csvUrl = "https://api.github.com/repos/${{ github.repository }}/releases/assets/514541168"
+          Invoke-WebRequest -Uri $elfUrl -Headers $headers -OutFile "inputs\game.elf"
+          Invoke-WebRequest -Uri $csvUrl -Headers $headers -OutFile "inputs\map.csv"
+
+      - name: Validate inputs
+        shell: pwsh
+        run: |
+          if (!(Test-Path "inputs\game.elf")) { throw "Missing game ELF after download" }
+          if (!(Test-Path "inputs\map.csv")) { throw "Missing map CSV after download" }
+
+      # Path updated: removed \Release\ due to Ninja generator
+      - name: Run ps2_analyzer
+        shell: cmd
+        run: |
+          .\build\ps2xAnalyzer\ps2_analyzer.exe "inputs\game.elf" "inputs\game.toml"
+
+      - name: Generate recomp config
+        shell: pwsh
+        run: |
+          $tomlPath = "inputs\game.toml"
+          
+          if (-not (Test-Path $tomlPath)) {
+            throw "Arquivo $tomlPath não encontrado – certifique-se de que o ps2_analyzer foi executado com sucesso."
+          }
+          
+          $tomlContent = Get-Content -Path $tomlPath -Raw
+          $config = ConvertFrom-Toml $tomlContent
+          
+          if (-not $config.general) {
+            $config | Add-Member -NotePropertyName "general" -NotePropertyValue @{} -Force
+          }
+          
+          $config.general.input = "inputs/game.elf"
+          $config.general.ghidra_output = "inputs/map.csv"
+          $config.general.output = "recomp_out"
+          
+          $newToml = ConvertTo-Toml $config
+          Set-Content -Path $tomlPath -Value $newToml -Encoding utf8NoBOM -NoNewline
+
+      - name: Debug TOML
+        shell: pwsh
+        run: |
+          Get-Content inputs\game.toml
+       
+      # Path updated: removed \Release\
+      - name: Run recomp
+        shell: cmd
+        run: |
+          .\build\ps2xRecomp\ps2_recomp.exe "inputs\game.toml"
+
+      - name: Copy generated source/header files into runtime
+        shell: pwsh
+        run: |
+          if (!(Test-Path "recomp_out")) { throw "Missing recomp_out folder from recomp step" }
+
+          New-Item -ItemType Directory -Force -Path "ps2xRuntime/src/runner" | Out-Null
+          New-Item -ItemType Directory -Force -Path "ps2xRuntime/include" | Out-Null
+
+          Get-ChildItem -Path "recomp_out" -Filter "*.cpp" -File | ForEach-Object {
+            Copy-Item $_.FullName -Destination "ps2xRuntime/src/runner/" -Force
+          }
+
+          Get-ChildItem -Path "recomp_out" -Filter "*.h" -File | ForEach-Object {
+            Copy-Item $_.FullName -Destination "ps2xRuntime/include/" -Force
+          }
+
+      # Use Ninja and Sccache here as well, migrating MSBuild flags to CMake flags
+      - name: Configure ps2EntryRunner build
+        shell: cmd
+        run: |
+          cmake -S . -B out/build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_UNITY_BUILD=OFF -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_C_FLAGS="/Zm200 /bigobj" -DCMAKE_CXX_FLAGS="/Zm200 /bigobj"
+
+      - name: Build ps2EntryRunner (RelWithDebInfo)
+        shell: cmd
+        run: |
+          cmake --build out/build --target ps2EntryRunner
+
+      # Path updated: Ninja outputs directly to the subfolder, not inside a RelWithDebInfo\ folder
+      - name: Verify ps2EntryRunner exists
+        shell: pwsh
+        run: |
+          if (!(Test-Path "out/build/ps2xRuntime/ps2EntryRunner.exe")) {
+            throw "ps2EntryRunner.exe not found at out/build/ps2xRuntime/ps2EntryRunner.exe"
+          }
+
+      - name: Upload ps2EntryRunner artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ps2EntryRunner-windows
+          path: out/build/ps2xRuntime/ps2EntryRunner.exe
+
+      - name: Upload recomp output
+        uses: actions/upload-artifact@v4
+        with:
+          name: Recompiled-Game
+          path: recomp_out/**

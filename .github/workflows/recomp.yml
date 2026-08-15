@@ -56,11 +56,10 @@ jobs:
         with:
           arch: x64
 
-      - name: Build tools
-        shell: cmd
-        run: |
-          cmake -B build
-          cmake --build build --config Release -- /p:CL="/Zm200 /bigobj"
+      - name: Download tools artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: PS2Recomp - Windows
 
       - name: Download game ELF and map CSV from Release assets
         shell: pwsh

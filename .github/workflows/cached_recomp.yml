@@ -134,6 +134,9 @@ jobs:
       - name: Generate recomp config
         shell: pwsh
         run: |
+          # Install the TOML module from the PowerShell Gallery
+          Install-Module -Name toml -Force -Scope CurrentUser
+          
           $tomlPath = "inputs\game.toml"
           
           if (-not (Test-Path $tomlPath)) {
@@ -153,7 +156,7 @@ jobs:
           
           $newToml = ConvertTo-Toml $config
           Set-Content -Path $tomlPath -Value $newToml -Encoding utf8NoBOM -NoNewline
-
+          
       - name: Debug TOML
         shell: pwsh
         run: |

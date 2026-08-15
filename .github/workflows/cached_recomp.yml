@@ -122,7 +122,7 @@ jobs:
       - name: Run ps2_analyzer
         shell: cmd
         run: |
-          .\build\ps2xAnalyzer\ps2_analyzer.exe "inputs\game.elf" "inputs\game.toml"
+          .\build\ps2xAnalyzer\ps2_analyzer.exe "inputs\game.elf" game.toml
 
       - name: Generate recomp config
         shell: pwsh

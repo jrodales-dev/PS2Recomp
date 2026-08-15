@@ -84,6 +84,10 @@ jobs:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.6
 
+      - name: Prepare sccache directory
+        shell: pwsh
+        run: New-Item -ItemType Directory -Force -Path "${{ env.SCCACHE_DIR }}" | Out-Null
+
       - name: Cache sccache
         uses: actions/cache@v4
         with:

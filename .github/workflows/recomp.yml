@@ -93,26 +93,24 @@ jobs:
         run: |
           $tomlPath = "inputs\game.toml"
           
-          # Verifica se o arquivo existe (deve ter sido gerado pelo ps2_analyzer)
           if (-not (Test-Path $tomlPath)) {
             throw "Arquivo $tomlPath não encontrado – certifique-se de que o ps2_analyzer foi executado com sucesso."
           }
+
+          # Install module for TOML support
+          Install-Module -Name PSToml -Scope CurrentUser -Force -SkipPublisherCheck
           
-          # Lê o TOML existente
           $tomlContent = Get-Content -Path $tomlPath -Raw
           $config = ConvertFrom-Toml $tomlContent
           
-          # Garante que a seção [general] existe
           if (-not $config.general) {
             $config | Add-Member -NotePropertyName "general" -NotePropertyValue @{} -Force
           }
           
-          # Atualiza as chaves desejadas
           $config.general.input = "inputs/game.elf"
           $config.general.ghidra_output = "inputs/map.csv"
           $config.general.output = "recomp_out"
           
-          # Converte de volta para TOML e salva com UTF-8 sem BOM
           $newToml = ConvertTo-Toml $config
           Set-Content -Path $tomlPath -Value $newToml -Encoding utf8NoBOM -NoNewline
 

@@ -118,8 +118,8 @@ jobs:
             Accept        = "application/octet-stream"
           }
           $elfUrl  = "https://api.github.com/repos/${{ github.repository }}/releases/assets/514541207"
-          $tomlUrl = "https://api.github.com/repos/${{ github.repository }}/releases/assets/516966138"
-          $csvUrl  = "https://api.github.com/repos/${{ github.repository }}/releases/assets/516966146"
+          $tomlUrl = "https://api.github.com/repos/${{ github.repository }}/releases/assets/518272193"
+          $csvUrl  = "https://api.github.com/repos/${{ github.repository }}/releases/assets/518272170"
           Invoke-WebRequest -Uri $elfUrl  -Headers $headers -OutFile "inputs\game.elf"
           Invoke-WebRequest -Uri $tomlUrl -Headers $headers -OutFile "inputs\game.toml"
           Invoke-WebRequest -Uri $csvUrl  -Headers $headers -OutFile "inputs\map.csv"
